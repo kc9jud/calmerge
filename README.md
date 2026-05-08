@@ -48,6 +48,45 @@ sources = [
 
 Set the config path via `--config` flag or `CALMERGE_CONFIG` environment variable.
 
+## Docker
+
+### Standalone (no nginx)
+
+```bash
+cp config.toml.example config.toml
+$EDITOR config.toml
+docker compose up -d
+```
+
+The service binds to `127.0.0.1:8080`. Calendars are available at `http://127.0.0.1:8080/<name>.ics`.
+
+### With nginx reverse proxy
+
+```bash
+docker compose -f docker-compose.nginx.yml up -d
+```
+
+nginx listens on port 80. Calendars are served at `http://your-host/calmerge/<name>.ics`. The calmerge container has no public port — only nginx can reach it.
+
+If you mount local calendar files, add a volume to the `calmerge` service in the compose file, e.g.:
+
+```yaml
+volumes:
+  - ./config.toml:/config/config.toml:ro
+  - /home/user/calendars:/calendars:ro
+```
+
+### Pre-built image
+
+A Docker image is automatically published to the GitHub Container Registry on every push to `main` and on version tags:
+
+```bash
+docker pull ghcr.io/kc9jud/calmerge:main
+docker pull ghcr.io/kc9jud/calmerge:v1.2.3
+```
+
+To use the pre-built image instead of building locally, replace `build: .` with `image: ghcr.io/kc9jud/calmerge:main` in the compose file.
+
 ## Production deployment
 
 ### gunicorn (standalone)
