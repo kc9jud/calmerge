@@ -1,0 +1,33 @@
+# calmerge configuration example
+# Copy to config.toml and edit as needed.
+
+# Global defaults (can be overridden per calendar)
+[defaults]
+freebusy = false   # include full event details by default
+
+# Each [[calendars]] entry defines one HTTP endpoint at /<name>.ics
+# Multiple calendars are served independently.
+
+[[calendars]]
+name = "work"              # served at /work.ics
+freebusy = false           # include full event details
+sources = [
+    { url = "https://calendar.example.com/work.ics", id = "work-main" },
+    { url = "https://calendar.google.com/calendar/ical/abc123/basic.ics", id = "google" },
+]
+
+[[calendars]]
+name = "home"
+freebusy = false
+sources = [
+    # Local files are also supported
+    { file = "/home/user/calendars/personal.ics", id = "personal" },
+]
+
+[[calendars]]
+name = "availability"
+freebusy = true            # strip personal data; SUMMARY replaced with "Busy"
+sources = [
+    { url = "https://calendar.example.com/work.ics", id = "work" },
+    { file = "/home/user/calendars/personal.ics", id = "personal" },
+]
