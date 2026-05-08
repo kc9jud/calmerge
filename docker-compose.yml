@@ -1,0 +1,18 @@
+services:
+  calmerge:
+    build: .
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      # Mount your config.toml (copy config.toml.example to config.toml first)
+      - ./config.toml:/config/config.toml:ro
+      # If any sources use local file paths, mount those directories here, e.g.:
+      # - /home/user/calendars:/calendars:ro
+    environment:
+      CALMERGE_CONFIG: /config/config.toml
+    restart: unless-stopped
+    # Optional: resource limits appropriate for a lightweight on-demand service
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 128m
