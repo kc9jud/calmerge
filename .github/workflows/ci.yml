@@ -7,6 +7,14 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: j178/prek-action@v2
+
   test:
     runs-on: ubuntu-latest
 
@@ -23,12 +31,6 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --extra dev
-
-      - name: Lint
-        run: uv run ruff check .
-
-      - name: Format check
-        run: uv run ruff format --check .
 
       - name: Test
         run: uv run pytest --cov --cov-report=term-missing
