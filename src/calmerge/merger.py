@@ -1,5 +1,6 @@
 import copy
 import logging
+import math
 
 from icalendar import Calendar, Event
 
@@ -95,12 +96,15 @@ def _parse_calendar(raw: bytes) -> Calendar | None:
         return None
 
 
+MIN_TTL = 300.0  # 5 minutes
+
+
 def compute_min_ttl(ttls: list[float]) -> float:
     if not ttls:
-        return float("inf")
+        return math.inf
     if any(t == 0.0 for t in ttls):
-        return 0.0
-    finite = [t for t in ttls if t != float("inf")]
+        return MIN_TTL
+    finite = [t for t in ttls if math.isfinite(t)]
     if not finite:
-        return float("inf")
-    return min(finite)
+        return math.inf
+    return max(min(finite), MIN_TTL)

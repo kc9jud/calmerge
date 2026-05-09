@@ -244,12 +244,12 @@ def test_compute_min_ttl_empty():
 
 
 def test_compute_min_ttl_with_zero():
-    assert compute_min_ttl([300.0, 0.0, float("inf")]) == 0.0
+    assert compute_min_ttl([300.0, 0.0, float("inf")]) == 300.0
 
 
 def test_compute_min_ttl_mixed():
-    assert compute_min_ttl([300.0, 60.0, float("inf")]) == 60.0
+    assert compute_min_ttl([300.0, 60.0, float("inf")]) == 300.0
 
 
 def test_compute_min_ttl_single_finite():
-    assert compute_min_ttl([120.0]) == 120.0
+    assert compute_min_ttl([120.0]) == 300.0

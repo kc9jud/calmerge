@@ -68,7 +68,7 @@ def test_cache_control_no_cache(client, httpx_mock):
         headers={"Cache-Control": "no-cache"},
     )
     response = client.get("/work.ics")
-    assert response.headers.get("Cache-Control") == "no-cache"
+    assert response.headers.get("Cache-Control") == "max-age=300"
 
 
 def test_cache_control_omitted_when_no_directives(client, httpx_mock):
