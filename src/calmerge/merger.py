@@ -4,6 +4,7 @@ import math
 
 from icalendar import Calendar, Event
 
+from .cache import MIN_TTL
 from .config import CalendarConfig, SourceConfig
 
 logger = logging.getLogger(__name__)
@@ -94,9 +95,6 @@ def _parse_calendar(raw: bytes) -> Calendar | None:
     except Exception as exc:
         logger.warning("Failed to parse calendar: %s", exc)
         return None
-
-
-MIN_TTL = 300.0  # 5 minutes
 
 
 def compute_min_ttl(ttls: list[float]) -> float:

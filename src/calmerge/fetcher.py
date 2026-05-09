@@ -4,7 +4,7 @@ from pathlib import Path
 
 import httpx
 
-from .cache import CacheEntry, SourceCache, parse_cache_ttl
+from .cache import MIN_TTL, CacheEntry, SourceCache, parse_cache_ttl
 from .config import SourceConfig
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ def _fetch_url(
             updated = CacheEntry(
                 content=stale.content,
                 fetched_at=time.monotonic(),
-                ttl=parse_cache_ttl(dict(response.headers)),
+                ttl=max(parse_cache_ttl(dict(response.headers)), MIN_TTL),
                 etag=stale.etag,
                 last_modified=stale.last_modified,
             )
@@ -66,7 +66,7 @@ def _fetch_url(
 
     if response.status_code == 200:
         resp_headers = dict(response.headers)
-        ttl = parse_cache_ttl(resp_headers)
+        ttl = max(parse_cache_ttl(resp_headers), MIN_TTL)
         entry = CacheEntry(
             content=response.content,
             fetched_at=time.monotonic(),

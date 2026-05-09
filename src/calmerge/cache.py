@@ -3,6 +3,8 @@ import time
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 
+MIN_TTL = 300.0  # 5 minutes
+
 
 @dataclass
 class CacheEntry:
