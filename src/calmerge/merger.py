@@ -1,4 +1,3 @@
-import copy
 import logging
 import math
 
@@ -96,9 +95,10 @@ def _anonymize_event(event: Event, new_uid: str) -> Event:
 
 
 def _copy_event(event: Event, new_uid: str) -> Event:
-    new_event = copy.deepcopy(event)
-    if "UID" in new_event:
-        del new_event["UID"]
+    new_event = Event()
+    for key, value in event.items():
+        if key.upper() != "UID":
+            new_event[key] = value
     new_event.add("UID", new_uid)
     return new_event
 
