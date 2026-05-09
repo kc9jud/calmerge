@@ -21,7 +21,8 @@ RUN uv sync --frozen --no-dev
 RUN useradd --system --no-create-home --home-dir /tmp calmerge
 
 ENV PATH="/app/.venv/bin:$PATH" \
-    CALMERGE_CONFIG=/config/config.toml
+    CALMERGE_CONFIG=/config/config.toml \
+    CALMERGE_LOG_LEVEL=WARNING
 
 USER calmerge
 

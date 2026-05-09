@@ -2,6 +2,7 @@ import argparse
 import logging
 import math
 import os
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 import httpx
 from flask import Flask, Response, abort
 
+from . import TRACE
 from .cache import MIN_TTL, SourceCache
 from .config import AppConfig, load_config
 from .fetcher import fetch_source
@@ -24,9 +26,27 @@ class _MergedEntry:
 
 logger = logging.getLogger(__name__)
 
+_LEVEL_NAMES = {"TRACE": TRACE, "DEBUG": logging.DEBUG, "INFO": logging.INFO,
+                "WARNING": logging.WARNING, "WARN": logging.WARNING,
+                "ERROR": logging.ERROR, "CRITICAL": logging.CRITICAL}
+
+
+def _configure_logging() -> None:
+    level_name = os.environ.get("CALMERGE_LOG_LEVEL", "").upper()
+    if not level_name:
+        return
+    level = _LEVEL_NAMES.get(level_name)
+    if level is None:
+        logging.getLogger(__name__).warning("Unknown CALMERGE_LOG_LEVEL=%r, ignoring", level_name)
+        return
+    logging.basicConfig(stream=sys.stderr)
+    logging.getLogger("calmerge").setLevel(level)
+
 
 def create_app(config_path: Path | None = None) -> Flask:
     app = Flask(__name__)
+
+    _configure_logging()
 
     resolved_path = config_path or Path(os.environ.get("CALMERGE_CONFIG", "config.toml"))
     logger.info("Loading config from %s", resolved_path)
