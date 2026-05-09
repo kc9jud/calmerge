@@ -4,6 +4,7 @@ import math
 
 from icalendar import Calendar, Event
 
+from . import TRACE
 from .cache import MIN_TTL
 from .config import CalendarConfig, SourceConfig
 
@@ -39,17 +40,22 @@ def merge_calendars(
     tzones: dict[str, object] = {}
     events: list[Event] = []
 
+    logger.debug("Merging %d source(s), freebusy=%s", len(source_bytes), calendar_config.freebusy)
+
     for source_config, raw in source_bytes:
+        logger.trace("Parsing source '%s' (%d bytes)", source_config.id, len(raw))  # type: ignore[attr-defined]
         cal = _parse_calendar(raw)
         if cal is None:
             continue
 
+        tz_before = len(tzones)
         for component in cal.subcomponents:
             if component.name == "VTIMEZONE":
                 tzid = str(component["TZID"])
                 if tzid not in tzones:
                     tzones[tzid] = component
 
+        event_before = len(events)
         for component in cal.walk("VEVENT"):
             original_uid = str(component.get("UID", f"no-uid-{id(component)}"))
             new_uid = f"{source_config.id}:{original_uid}"
@@ -60,6 +66,15 @@ def merge_calendars(
                 event = _copy_event(component, new_uid)
 
             events.append(event)
+
+        logger.trace(  # type: ignore[attr-defined]
+            "Source '%s': %d event(s), %d new timezone(s)",
+            source_config.id,
+            len(events) - event_before,
+            len(tzones) - tz_before,
+        )
+
+    logger.debug("Merged result: %d event(s), %d timezone(s)", len(events), len(tzones))
 
     for tz in tzones.values():
         output.add_component(tz)

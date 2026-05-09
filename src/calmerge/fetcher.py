@@ -1,9 +1,11 @@
 import logging
+import math
 import time
 from pathlib import Path
 
 import httpx
 
+from . import TRACE
 from .cache import MIN_TTL, CacheEntry, SourceCache, parse_cache_ttl
 from .config import SourceConfig
 
@@ -30,10 +32,13 @@ def _fetch_url(
     cache: SourceCache,
     http_client: httpx.Client,
 ) -> bytes | None:
+    logger.trace("Checking source cache for '%s'", url)  # type: ignore[attr-defined]
     fresh = cache.get(url)
     if fresh is not None:
+        logger.debug("Source cache hit for '%s'", url)
         return fresh.content
 
+    logger.debug("Source cache miss for '%s', fetching", url)
     stale = cache.get_stale(url)
 
     headers: dict[str, str] = {}
@@ -51,15 +56,17 @@ def _fetch_url(
 
     if response.status_code == 304:
         if stale is not None:
+            ttl = max(parse_cache_ttl(dict(response.headers)), MIN_TTL)
             # Reset the TTL by updating fetched_at
             updated = CacheEntry(
                 content=stale.content,
                 fetched_at=time.monotonic(),
-                ttl=max(parse_cache_ttl(dict(response.headers)), MIN_TTL),
+                ttl=ttl,
                 etag=stale.etag,
                 last_modified=stale.last_modified,
             )
             cache.set(url, updated)
+            logger.debug("304 for '%s', refreshed cache entry with ttl=%s", url, "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s")
             return stale.content
         logger.warning("Got 304 for '%s' but no cached content available", url)
         return None
@@ -75,6 +82,7 @@ def _fetch_url(
             last_modified=response.headers.get("last-modified"),
         )
         cache.set(url, entry)
+        logger.debug("Fetched '%s': %d bytes, ttl=%s", url, len(response.content), "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s")
         return response.content
 
     logger.warning("Unexpected status %d for '%s'", response.status_code, url)

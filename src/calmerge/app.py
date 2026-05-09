@@ -29,7 +29,9 @@ def create_app(config_path: Path | None = None) -> Flask:
     app = Flask(__name__)
 
     resolved_path = config_path or Path(os.environ.get("CALMERGE_CONFIG", "config.toml"))
+    logger.info("Loading config from %s", resolved_path)
     app_config = load_config(resolved_path)
+    logger.info("Loaded %d calendar(s)", len(app_config.calendars_by_name))
     app.config["CALMERGE_CONFIG"] = app_config
     app.extensions["calmerge_cache"] = SourceCache()
     app.extensions["calmerge_merged"]: dict[str, _MergedEntry] = {}
@@ -42,8 +44,10 @@ def create_app(config_path: Path | None = None) -> Flask:
     @app.get("/<name>.ics")
     def serve_calendar(name: str) -> Response:
         config: AppConfig = app.config["CALMERGE_CONFIG"]
+        logger.debug("Request for calendar '%s'", name)
         cal_config = config.calendars_by_name.get(name)
         if cal_config is None:
+            logger.debug("Calendar '%s' not found", name)
             abort(404)
 
         cache: SourceCache = app.extensions["calmerge_cache"]
@@ -52,11 +56,13 @@ def create_app(config_path: Path | None = None) -> Flask:
 
         entry = merged.get(name)
         if entry is not None and time.monotonic() - entry.fetched_at < entry.cache_ttl:
+            logger.debug("Merged cache hit for '%s'", name)
             headers: dict[str, str] = {"Content-Type": "text/calendar; charset=utf-8"}
             if math.isfinite(entry.min_ttl):
                 headers["Cache-Control"] = f"max-age={int(entry.min_ttl)}"
             return Response(entry.content, headers=headers)
 
+        logger.debug("Merged cache miss for '%s', fetching %d source(s)", name, len(cal_config.sources))
         source_bytes = []
         for source in cal_config.sources:
             data = fetch_source(source, cache, http_client)
@@ -66,6 +72,7 @@ def create_app(config_path: Path | None = None) -> Flask:
                 logger.warning("Source '%s' for calendar '%s' returned no data", source.id, name)
 
         if not source_bytes:
+            logger.error("All sources failed for calendar '%s', returning 503", name)
             abort(503)
 
         ics_bytes = merge_calendars(cal_config, source_bytes)
@@ -80,6 +87,7 @@ def create_app(config_path: Path | None = None) -> Flask:
 
         min_ttl = compute_min_ttl(ttls)
         cache_ttl = min_ttl if math.isfinite(min_ttl) else MIN_TTL
+        logger.info("Merged %d source(s) for '%s', cache_ttl=%.0fs", len(source_bytes), name, cache_ttl)
         merged[name] = _MergedEntry(
             content=ics_bytes,
             fetched_at=time.monotonic(),

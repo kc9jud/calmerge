@@ -1,9 +1,14 @@
+import logging
 import math
 import time
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 
+from . import TRACE
+
 MIN_TTL = 300.0  # 5 minutes
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -22,15 +27,20 @@ class SourceCache:
     def get(self, url: str) -> CacheEntry | None:
         entry = self._store.get(url)
         if entry is None:
+            logger.trace("Cache get '%s': not found", url)  # type: ignore[attr-defined]
             return None
-        if time.monotonic() - entry.fetched_at < entry.ttl:
+        elapsed = time.monotonic() - entry.fetched_at
+        if elapsed < entry.ttl:
+            logger.trace("Cache get '%s': fresh (%.0fs remaining)", url, entry.ttl - elapsed)  # type: ignore[attr-defined]
             return entry
+        logger.trace("Cache get '%s': stale (expired %.0fs ago)", url, elapsed - entry.ttl)  # type: ignore[attr-defined]
         return None
 
     def get_stale(self, url: str) -> CacheEntry | None:
         return self._store.get(url)
 
     def set(self, url: str, entry: CacheEntry) -> None:
+        logger.trace("Cache set '%s' ttl=%s", url, "inf" if not math.isfinite(entry.ttl) else f"{entry.ttl:.0f}s")  # type: ignore[attr-defined]
         self._store[url] = entry
 
     def invalidate(self, url: str) -> None:
