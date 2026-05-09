@@ -18,7 +18,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY src/ src/
 RUN uv sync --frozen --no-dev
 
-RUN useradd --system --no-create-home calmerge
+RUN useradd --system --no-create-home --home-dir /tmp calmerge
 
 ENV PATH="/app/.venv/bin:$PATH" \
     CALMERGE_CONFIG=/config/config.toml
