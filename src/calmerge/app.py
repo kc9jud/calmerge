@@ -2,15 +2,25 @@ import argparse
 import logging
 import math
 import os
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
 from flask import Flask, Response, abort
 
-from .cache import SourceCache
+from .cache import MIN_TTL, SourceCache
 from .config import AppConfig, load_config
 from .fetcher import fetch_source
 from .merger import compute_min_ttl, merge_calendars
+
+
+@dataclass
+class _MergedEntry:
+    content: bytes
+    fetched_at: float
+    cache_ttl: float
+    min_ttl: float
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +32,7 @@ def create_app(config_path: Path | None = None) -> Flask:
     app_config = load_config(resolved_path)
     app.config["CALMERGE_CONFIG"] = app_config
     app.extensions["calmerge_cache"] = SourceCache()
+    app.extensions["calmerge_merged"]: dict[str, _MergedEntry] = {}
     app.extensions["calmerge_http"] = httpx.Client(
         timeout=httpx.Timeout(30.0),
         follow_redirects=True,
@@ -37,6 +48,14 @@ def create_app(config_path: Path | None = None) -> Flask:
 
         cache: SourceCache = app.extensions["calmerge_cache"]
         http_client: httpx.Client = app.extensions["calmerge_http"]
+        merged: dict[str, _MergedEntry] = app.extensions["calmerge_merged"]
+
+        entry = merged.get(name)
+        if entry is not None and time.monotonic() - entry.fetched_at < entry.cache_ttl:
+            headers: dict[str, str] = {"Content-Type": "text/calendar; charset=utf-8"}
+            if math.isfinite(entry.min_ttl):
+                headers["Cache-Control"] = f"max-age={int(entry.min_ttl)}"
+            return Response(entry.content, headers=headers)
 
         source_bytes = []
         for source in cal_config.sources:
@@ -54,17 +73,22 @@ def create_app(config_path: Path | None = None) -> Flask:
         ttls = []
         for source in cal_config.sources:
             if source.url:
-                entry = cache.get_stale(source.url)
-                ttls.append(entry.ttl if entry is not None else math.inf)
+                src_entry = cache.get_stale(source.url)
+                ttls.append(src_entry.ttl if src_entry is not None else math.inf)
             else:
                 ttls.append(math.inf)
 
         min_ttl = compute_min_ttl(ttls)
+        cache_ttl = min_ttl if math.isfinite(min_ttl) else MIN_TTL
+        merged[name] = _MergedEntry(
+            content=ics_bytes,
+            fetched_at=time.monotonic(),
+            cache_ttl=cache_ttl,
+            min_ttl=min_ttl,
+        )
 
-        headers: dict[str, str] = {"Content-Type": "text/calendar; charset=utf-8"}
-        if min_ttl == 0.0:
-            headers["Cache-Control"] = "no-cache"
-        elif min_ttl != math.inf:
+        headers = {"Content-Type": "text/calendar; charset=utf-8"}
+        if math.isfinite(min_ttl):
             headers["Cache-Control"] = f"max-age={int(min_ttl)}"
 
         return Response(ics_bytes, headers=headers)
