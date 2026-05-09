@@ -24,11 +24,18 @@ class _MergedEntry:
     cache_ttl: float
     min_ttl: float
 
+
 logger = logging.getLogger(__name__)
 
-_LEVEL_NAMES = {"TRACE": TRACE, "DEBUG": logging.DEBUG, "INFO": logging.INFO,
-                "WARNING": logging.WARNING, "WARN": logging.WARNING,
-                "ERROR": logging.ERROR, "CRITICAL": logging.CRITICAL}
+_LEVEL_NAMES = {
+    "TRACE": TRACE,
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "WARN": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
 
 
 def _configure_logging() -> None:
@@ -82,7 +89,9 @@ def create_app(config_path: Path | None = None) -> Flask:
                 headers["Cache-Control"] = f"max-age={int(entry.min_ttl)}"
             return Response(entry.content, headers=headers)
 
-        logger.debug("Merged cache miss for '%s', fetching %d source(s)", name, len(cal_config.sources))
+        logger.debug(
+            "Merged cache miss for '%s', fetching %d source(s)", name, len(cal_config.sources)
+        )
         source_bytes = []
         for source in cal_config.sources:
             data = fetch_source(source, cache, http_client)
@@ -107,7 +116,9 @@ def create_app(config_path: Path | None = None) -> Flask:
 
         min_ttl = compute_min_ttl(ttls)
         cache_ttl = min_ttl if math.isfinite(min_ttl) else MIN_TTL
-        logger.info("Merged %d source(s) for '%s', cache_ttl=%.0fs", len(source_bytes), name, cache_ttl)
+        logger.info(
+            "Merged %d source(s) for '%s', cache_ttl=%.0fs", len(source_bytes), name, cache_ttl
+        )
         merged[name] = _MergedEntry(
             content=ics_bytes,
             fetched_at=time.monotonic(),

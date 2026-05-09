@@ -15,6 +15,7 @@ uv sync --extra dev   # install all dependencies including dev tools
 ## Running
 
 Development server (Werkzeug, not for production):
+
 ```bash
 uv run calmerge --config config.toml
 # or
@@ -22,6 +23,7 @@ CALMERGE_CONFIG=config.toml uv run flask --app calmerge.app:create_app run
 ```
 
 Production (gunicorn, single worker recommended for cache locality):
+
 ```bash
 CALMERGE_CONFIG=/etc/calmerge/config.toml \
   uv run gunicorn --workers 1 --bind 127.0.0.1:5000 --timeout 60 \
@@ -48,7 +50,7 @@ uv run ruff check --fix .  # auto-fix lint issues
 
 ## Architecture
 
-```
+```text
 src/calmerge/
 ├── app.py      Flask application factory; routes GET /<name>.ics and GET /health
 ├── config.py   TOML config loading; AppConfig / CalendarConfig / SourceConfig dataclasses

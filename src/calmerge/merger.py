@@ -4,7 +4,6 @@ import math
 
 from icalendar import Calendar, Event
 
-from . import TRACE
 from .cache import MIN_TTL
 from .config import CalendarConfig, SourceConfig
 

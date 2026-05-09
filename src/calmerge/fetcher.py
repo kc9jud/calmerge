@@ -5,7 +5,6 @@ from pathlib import Path
 
 import httpx
 
-from . import TRACE
 from .cache import MIN_TTL, CacheEntry, SourceCache, parse_cache_ttl
 from .config import SourceConfig
 
@@ -66,7 +65,11 @@ def _fetch_url(
                 last_modified=stale.last_modified,
             )
             cache.set(url, updated)
-            logger.debug("304 for '%s', refreshed cache entry with ttl=%s", url, "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s")
+            logger.debug(
+                "304 for '%s', refreshed cache entry with ttl=%s",
+                url,
+                "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s",
+            )
             return stale.content
         logger.warning("Got 304 for '%s' but no cached content available", url)
         return None
@@ -82,7 +85,12 @@ def _fetch_url(
             last_modified=response.headers.get("last-modified"),
         )
         cache.set(url, entry)
-        logger.debug("Fetched '%s': %d bytes, ttl=%s", url, len(response.content), "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s")
+        logger.debug(
+            "Fetched '%s': %d bytes, ttl=%s",
+            url,
+            len(response.content),
+            "inf" if not math.isfinite(ttl) else f"{ttl:.0f}s",
+        )
         return response.content
 
     logger.warning("Unexpected status %d for '%s'", response.status_code, url)
