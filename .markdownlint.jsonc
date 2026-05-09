@@ -1,0 +1,20 @@
+{
+  // Disable line-length limit — long URLs, code spans, and table cells make
+  // an 80-char limit impractical without adding value.
+  "MD013": false,
+
+  // Require a language specifier on every fenced code block.
+  "MD040": true,
+
+  // Disable no-emphasis-as-heading — **Bold:** labels are a common and
+  // intentional pattern in plugin/skill documentation.
+  "MD036": false,
+
+  // Disable first-line-heading — reference files, skill configs, and agent
+  // docs don't always begin with an H1, and that's fine.
+  "MD041": false,
+
+  // Disable table-column-style — standard GFM compact tables (no padding
+  // inside pipes) are valid and widely used.
+  "MD060": false
+}
