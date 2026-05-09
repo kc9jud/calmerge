@@ -1,3 +1,5 @@
+import math
+
 from icalendar import Calendar
 
 from calmerge.config import CalendarConfig, SourceConfig
@@ -236,19 +238,19 @@ def test_timezones_emitted_before_events():
 
 
 def test_compute_min_ttl_all_inf():
-    assert compute_min_ttl([float("inf"), float("inf")]) == float("inf")
+    assert compute_min_ttl([math.inf, math.inf]) == math.inf
 
 
 def test_compute_min_ttl_empty():
-    assert compute_min_ttl([]) == float("inf")
+    assert compute_min_ttl([]) == math.inf
 
 
 def test_compute_min_ttl_with_zero():
-    assert compute_min_ttl([300.0, 0.0, float("inf")]) == 300.0
+    assert compute_min_ttl([300.0, 0.0, math.inf]) == 300.0
 
 
 def test_compute_min_ttl_mixed():
-    assert compute_min_ttl([300.0, 60.0, float("inf")]) == 300.0
+    assert compute_min_ttl([300.0, 60.0, math.inf]) == 300.0
 
 
 def test_compute_min_ttl_single_finite():

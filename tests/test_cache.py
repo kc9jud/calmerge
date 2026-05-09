@@ -1,3 +1,4 @@
+import math
 import time
 
 from freezegun import freeze_time
@@ -107,7 +108,7 @@ def test_parse_cache_ttl_expires_past():
 
 
 def test_parse_cache_ttl_no_headers():
-    assert parse_cache_ttl({}) == float("inf")
+    assert parse_cache_ttl({}) == math.inf
 
 
 def test_parse_cache_ttl_max_age_takes_priority_over_expires():

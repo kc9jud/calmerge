@@ -1,5 +1,6 @@
 import argparse
 import logging
+import math
 import os
 from pathlib import Path
 
@@ -54,16 +55,16 @@ def create_app(config_path: Path | None = None) -> Flask:
         for source in cal_config.sources:
             if source.url:
                 entry = cache.get_stale(source.url)
-                ttls.append(entry.ttl if entry is not None else float("inf"))
+                ttls.append(entry.ttl if entry is not None else math.inf)
             else:
-                ttls.append(float("inf"))
+                ttls.append(math.inf)
 
         min_ttl = compute_min_ttl(ttls)
 
         headers: dict[str, str] = {"Content-Type": "text/calendar; charset=utf-8"}
         if min_ttl == 0.0:
             headers["Cache-Control"] = "no-cache"
-        elif min_ttl != float("inf"):
+        elif min_ttl != math.inf:
             headers["Cache-Control"] = f"max-age={int(min_ttl)}"
 
         return Response(ics_bytes, headers=headers)

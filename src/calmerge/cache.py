@@ -1,3 +1,4 @@
+import math
 import time
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
@@ -57,4 +58,4 @@ def parse_cache_ttl(headers: dict[str, str]) -> float:
         except Exception:
             pass
 
-    return float("inf")
+    return math.inf
