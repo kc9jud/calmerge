@@ -123,3 +123,11 @@ def test_parse_cache_ttl_max_age_takes_priority_over_expires():
 
 def test_parse_cache_ttl_zero_max_age():
     assert parse_cache_ttl({"Cache-Control": "max-age=0"}) == 0.0
+
+
+def test_parse_cache_ttl_malformed_max_age():
+    assert parse_cache_ttl({"Cache-Control": "max-age=notanumber"}) == math.inf
+
+
+def test_parse_cache_ttl_malformed_expires():
+    assert parse_cache_ttl({"Expires": "not-a-valid-date"}) == math.inf

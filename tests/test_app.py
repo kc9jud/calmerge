@@ -1,5 +1,9 @@
+import logging
+from unittest.mock import patch
+
 from icalendar import Calendar
 
+from calmerge.app import create_app, main
 from tests.conftest import SAMPLE_ICS, URL_HOME, URL_WORK
 
 
@@ -92,3 +96,53 @@ def test_full_details_calendar_keeps_summary(client, httpx_mock):
     cal = Calendar.from_ical(response.data)
     for event in cal.walk("VEVENT"):
         assert str(event["SUMMARY"]) == "Team Meeting"
+
+
+def test_merged_cache_hit_serves_from_cache(client, httpx_mock):
+    httpx_mock.add_response(
+        url=URL_WORK, content=SAMPLE_ICS, headers={"Cache-Control": "max-age=600"}
+    )
+    client.get("/work.ics")
+    response = client.get("/work.ics")
+    assert response.status_code == 200
+    assert len(httpx_mock.get_requests()) == 1
+
+
+def test_configure_logging_valid_level(app_config, monkeypatch):
+    monkeypatch.setenv("CALMERGE_LOG_LEVEL", "DEBUG")
+    create_app(config_path=app_config)
+    assert logging.getLogger("calmerge").level == logging.DEBUG
+    logging.getLogger("calmerge").setLevel(logging.NOTSET)
+
+
+def test_configure_logging_invalid_level(app_config, monkeypatch):
+    monkeypatch.setenv("CALMERGE_LOG_LEVEL", "NOTAVALIDLEVEL")
+    create_app(config_path=app_config)
+
+
+def test_file_source_calendar(tmp_path):
+    ics_file = tmp_path / "cal.ics"
+    ics_file.write_bytes(SAMPLE_ICS)
+    config_path = tmp_path / "config.toml"
+    config_path.write_text(
+        f"""
+[[calendars]]
+name = "local"
+freebusy = false
+sources = [
+    {{ file = "{ics_file}", id = "local" }},
+]
+"""
+    )
+    app = create_app(config_path=config_path)
+    app.config["TESTING"] = True
+    response = app.test_client().get("/local.ics")
+    assert response.status_code == 200
+    assert "Cache-Control" not in response.headers
+
+
+def test_main(app_config, monkeypatch):
+    monkeypatch.setattr("sys.argv", ["calmerge", "--config", str(app_config)])
+    with patch("flask.Flask.run") as mock_run:
+        main()
+    mock_run.assert_called_once_with(host="127.0.0.1", port=5000)

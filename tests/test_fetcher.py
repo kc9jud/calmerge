@@ -200,3 +200,25 @@ def test_fetch_source_failure_returns_none(httpx_mock):
     source = make_source(url=URL)
     result = fetch_source(source, cache, client)
     assert result is None
+
+
+def test_fetch_url_304_without_cached_content(httpx_mock):
+    httpx_mock.add_response(url=URL, status_code=304)
+    cache = SourceCache()
+    client = httpx.Client()
+    result = _fetch_url(URL, cache, client)
+    assert result is None
+
+
+def test_fetch_source_unexpected_exception(monkeypatch):
+    from calmerge import fetcher
+
+    def boom(url, cache, http_client):
+        raise RuntimeError("unexpected!")
+
+    monkeypatch.setattr(fetcher, "_fetch_url", boom)
+    cache = SourceCache()
+    client = httpx.Client()
+    source = make_source(url=URL)
+    result = fetch_source(source, cache, client)
+    assert result is None

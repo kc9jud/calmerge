@@ -212,6 +212,17 @@ def test_empty_sources_returns_valid_calendar():
     assert list(cal.walk("VEVENT")) == []
 
 
+def test_merge_skips_invalid_ics_source():
+    config = make_calendar_config(sources=[make_source("s1"), make_source("s2")])
+    valid_raw = make_ics([SAMPLE_EVENT])
+    invalid_raw = b"THIS IS NOT VALID ICS DATA"
+    result = merge_calendars(
+        config, [(make_source("s1"), valid_raw), (make_source("s2"), invalid_raw)]
+    )
+    cal = Calendar.from_ical(result)
+    assert len(list(cal.walk("VEVENT"))) == 1
+
+
 def test_output_is_valid_ics():
     config = make_calendar_config()
     source = make_source("s1")
