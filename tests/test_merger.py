@@ -292,7 +292,7 @@ def make_ics_with_attendees(partstat: str, email: str = "john@example.com") -> b
         f"DTSTART:{SAMPLE_EVENT['DTSTART']}",
         f"DTEND:{SAMPLE_EVENT['DTEND']}",
         f"SUMMARY:{SAMPLE_EVENT['SUMMARY']}",
-        f"STATUS:CONFIRMED",
+        "STATUS:CONFIRMED",
         f"ATTENDEE;PARTSTAT={partstat}:mailto:{email}",
         "END:VEVENT",
         "END:VCALENDAR",

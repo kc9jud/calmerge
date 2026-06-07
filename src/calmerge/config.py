@@ -68,7 +68,9 @@ def load_config(path: Path) -> AppConfig:
 
         participant = cal_raw.get("participant")
 
-        calendars.append(CalendarConfig(name=name, freebusy=freebusy, sources=sources, participant=participant))
+        calendars.append(
+            CalendarConfig(name=name, freebusy=freebusy, sources=sources, participant=participant)
+        )
 
     config = AppConfig(calendars=calendars)
     config.calendars_by_name = {cal.name: cal for cal in calendars}
