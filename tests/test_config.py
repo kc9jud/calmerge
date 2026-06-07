@@ -177,6 +177,33 @@ sources = [{ url = "https://example.com/work.ics", id = "work" }]
         load_config(p)
 
 
+def test_participant_loaded(tmp_path):
+    p = write_toml(
+        tmp_path,
+        """
+[[calendars]]
+name = "work"
+participant = "john@example.com"
+sources = [{ url = "https://example.com/work.ics", id = "work" }]
+""",
+    )
+    config = load_config(p)
+    assert config.calendars[0].participant == "john@example.com"
+
+
+def test_participant_defaults_to_none(tmp_path):
+    p = write_toml(
+        tmp_path,
+        """
+[[calendars]]
+name = "work"
+sources = [{ url = "https://example.com/work.ics", id = "work" }]
+""",
+    )
+    config = load_config(p)
+    assert config.calendars[0].participant is None
+
+
 def test_multiple_sources(tmp_path):
     p = write_toml(
         tmp_path,

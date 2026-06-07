@@ -8,6 +8,13 @@ from .config import CalendarConfig, SourceConfig
 
 logger = logging.getLogger(__name__)
 
+_PARTSTAT_TO_STATUS = {
+    "ACCEPTED": "CONFIRMED",
+    "TENTATIVE": "TENTATIVE",
+    "DECLINED": "CANCELLED",
+    "NEEDS-ACTION": "TENTATIVE",
+}
+
 FREEBUSY_KEEP_PROPS = frozenset(
     {
         "DTSTART",
@@ -64,6 +71,13 @@ def merge_calendars(
             else:
                 event = _copy_event(component, new_uid)
 
+            if calendar_config.participant:
+                derived = _participant_status(component, calendar_config.participant)
+                if derived is not None:
+                    if "STATUS" in event:
+                        del event["STATUS"]
+                    event.add("STATUS", derived)
+
             events.append(event)
 
         logger.trace(  # type: ignore[attr-defined]
@@ -102,6 +116,22 @@ def _copy_event(event: Event, new_uid: str) -> Event:
             new_event[key] = value
     new_event.add("UID", new_uid)
     return new_event
+
+
+def _participant_status(event: Event, participant: str) -> str | None:
+    """Return the STATUS value derived from a participant's PARTSTAT, or None if not found."""
+    target = participant.lower()
+    attendees = event.get("ATTENDEE")
+    if attendees is None:
+        return None
+    if not isinstance(attendees, list):
+        attendees = [attendees]
+    for attendee in attendees:
+        uri = str(attendee).lower().removeprefix("mailto:")
+        if uri == target:
+            partstat = str(attendee.params.get("PARTSTAT", "")).upper()
+            return _PARTSTAT_TO_STATUS.get(partstat)
+    return None
 
 
 def _parse_calendar(raw: bytes) -> Calendar | None:

@@ -15,6 +15,7 @@ class CalendarConfig:
     name: str
     freebusy: bool
     sources: list[SourceConfig]
+    participant: str | None = None
 
 
 @dataclass
@@ -65,7 +66,9 @@ def load_config(path: Path) -> AppConfig:
                 )
             )
 
-        calendars.append(CalendarConfig(name=name, freebusy=freebusy, sources=sources))
+        participant = cal_raw.get("participant")
+
+        calendars.append(CalendarConfig(name=name, freebusy=freebusy, sources=sources, participant=participant))
 
     config = AppConfig(calendars=calendars)
     config.calendars_by_name = {cal.name: cal for cal in calendars}
