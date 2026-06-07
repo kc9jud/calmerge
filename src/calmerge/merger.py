@@ -120,17 +120,33 @@ def _copy_event(event: Event, new_uid: str) -> Event:
 
 def _participant_status(event: Event, participant: str) -> str | None:
     """Return the STATUS value derived from a participant's PARTSTAT, or None if not found."""
-    target = participant.lower()
+    target = participant.lower().removeprefix("mailto:")
+
+    # Check ATTENDEE list first — PARTSTAT is explicit there.
     attendees = event.get("ATTENDEE")
-    if attendees is None:
-        return None
-    if not isinstance(attendees, list):
-        attendees = [attendees]
-    for attendee in attendees:
-        uri = str(attendee).lower().removeprefix("mailto:")
-        if uri == target:
-            partstat = str(attendee.params.get("PARTSTAT", "")).upper()
-            return _PARTSTAT_TO_STATUS.get(partstat)
+    if attendees is not None:
+        if not isinstance(attendees, list):
+            attendees = [attendees]
+        for attendee in attendees:
+            uri = str(attendee).lower().removeprefix("mailto:")
+            if uri == target:
+                partstat = str(attendee.params.get("PARTSTAT", "")).upper()
+                status = _PARTSTAT_TO_STATUS.get(partstat)
+                logger.debug(
+                    "participant %s found as ATTENDEE, PARTSTAT=%s -> STATUS=%s",
+                    participant, partstat, status,
+                )
+                return status
+
+    # Fall back to ORGANIZER: organizers are implicitly accepted.
+    organizer = event.get("ORGANIZER")
+    if organizer is not None:
+        org_uri = str(organizer).lower().removeprefix("mailto:")
+        if org_uri == target:
+            logger.debug("participant %s found as ORGANIZER -> STATUS=CONFIRMED", participant)
+            return "CONFIRMED"
+
+    logger.debug("participant %s not found in ATTENDEE or ORGANIZER", participant)
     return None
 
 

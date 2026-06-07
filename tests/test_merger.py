@@ -348,6 +348,51 @@ def test_participant_no_attendees_keeps_original_status():
     assert str(event["STATUS"]) == "CONFIRMED"
 
 
+def make_ics_with_organizer(organizer_email: str) -> bytes:
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Test//Test//EN",
+        "BEGIN:VEVENT",
+        f"UID:{SAMPLE_EVENT['UID']}",
+        f"DTSTART:{SAMPLE_EVENT['DTSTART']}",
+        f"DTEND:{SAMPLE_EVENT['DTEND']}",
+        f"SUMMARY:{SAMPLE_EVENT['SUMMARY']}",
+        f"ORGANIZER;CN={organizer_email}:mailto:{organizer_email}",
+        "ATTENDEE;PARTSTAT=ACCEPTED:mailto:other@example.com",
+        "END:VEVENT",
+        "END:VCALENDAR",
+    ]
+    return "\r\n".join(lines).encode()
+
+
+def test_participant_as_organizer_sets_confirmed():
+    config = make_calendar_config(participant="john@example.com")
+    raw = make_ics_with_organizer("john@example.com")
+    result = merge_calendars(config, [(make_source("s1"), raw)])
+    event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
+    assert str(event["STATUS"]) == "CONFIRMED"
+
+
+def test_attendee_partstat_takes_precedence_over_organizer():
+    # If participant appears as both organizer and attendee, use ATTENDEE PARTSTAT.
+    lines = [
+        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Test//Test//EN",
+        "BEGIN:VEVENT",
+        f"UID:{SAMPLE_EVENT['UID']}",
+        f"DTSTART:{SAMPLE_EVENT['DTSTART']}",
+        f"DTEND:{SAMPLE_EVENT['DTEND']}",
+        "ORGANIZER;CN=john@example.com:mailto:john@example.com",
+        "ATTENDEE;PARTSTAT=TENTATIVE:mailto:john@example.com",
+        "END:VEVENT", "END:VCALENDAR",
+    ]
+    raw = "\r\n".join(lines).encode()
+    config = make_calendar_config(participant="john@example.com")
+    result = merge_calendars(config, [(make_source("s1"), raw)])
+    event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
+    assert str(event["STATUS"]) == "TENTATIVE"
+
+
 def test_participant_status_applied_in_freebusy_mode():
     config = make_calendar_config(freebusy=True, participant="john@example.com")
     raw = make_ics_with_attendees("TENTATIVE")
