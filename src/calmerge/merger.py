@@ -16,6 +16,7 @@ FREEBUSY_KEEP_PROPS = frozenset(
         "RRULE",
         "RDATE",
         "EXDATE",
+        "RECURRENCE-ID",
         "STATUS",
         "TRANSP",
         "UID",

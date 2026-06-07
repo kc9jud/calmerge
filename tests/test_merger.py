@@ -164,6 +164,34 @@ def test_freebusy_keeps_dtend():
     assert "DTEND" in event
 
 
+def test_freebusy_keeps_rrule():
+    config = make_calendar_config(freebusy=True)
+    source = make_source("s1")
+    raw = make_ics([{**SAMPLE_EVENT, "RRULE": "FREQ=WEEKLY;COUNT=4"}])
+    result = merge_calendars(config, [(source, raw)])
+    cal = Calendar.from_ical(result)
+    event = list(cal.walk("VEVENT"))[0]
+    assert "RRULE" in event
+
+
+def test_freebusy_keeps_recurrence_id():
+    config = make_calendar_config(freebusy=True)
+    source = make_source("s1")
+    master = {**SAMPLE_EVENT, "RRULE": "FREQ=WEEKLY;COUNT=4"}
+    exception = {
+        **SAMPLE_EVENT,
+        "DTSTART": "20260108T120000Z",
+        "DTEND": "20260108T130000Z",
+        "RECURRENCE-ID": "20260108T100000Z",
+    }
+    raw = make_ics([master, exception])
+    result = merge_calendars(config, [(source, raw)])
+    cal = Calendar.from_ical(result)
+    events = list(cal.walk("VEVENT"))
+    recurrence_ids = [e.get("RECURRENCE-ID") for e in events]
+    assert any(r is not None for r in recurrence_ids)
+
+
 def test_full_details_keeps_summary():
     config = make_calendar_config(freebusy=False)
     source = make_source("s1")
