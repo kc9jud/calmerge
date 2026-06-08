@@ -134,7 +134,9 @@ def _participant_status(event: Event, participant: str) -> str | None:
                 status = _PARTSTAT_TO_STATUS.get(partstat)
                 logger.debug(
                     "participant %s found as ATTENDEE, PARTSTAT=%s -> STATUS=%s",
-                    participant, partstat, status,
+                    participant,
+                    partstat,
+                    status,
                 )
                 return status
 

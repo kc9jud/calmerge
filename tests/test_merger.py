@@ -377,14 +377,17 @@ def test_participant_as_organizer_sets_confirmed():
 def test_attendee_partstat_takes_precedence_over_organizer():
     # If participant appears as both organizer and attendee, use ATTENDEE PARTSTAT.
     lines = [
-        "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Test//Test//EN",
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Test//Test//EN",
         "BEGIN:VEVENT",
         f"UID:{SAMPLE_EVENT['UID']}",
         f"DTSTART:{SAMPLE_EVENT['DTSTART']}",
         f"DTEND:{SAMPLE_EVENT['DTEND']}",
         "ORGANIZER;CN=john@example.com:mailto:john@example.com",
         "ATTENDEE;PARTSTAT=TENTATIVE:mailto:john@example.com",
-        "END:VEVENT", "END:VCALENDAR",
+        "END:VEVENT",
+        "END:VCALENDAR",
     ]
     raw = "\r\n".join(lines).encode()
     config = make_calendar_config(participant="john@example.com")
