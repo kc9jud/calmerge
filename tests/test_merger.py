@@ -6,14 +6,14 @@ from calmerge.config import CalendarConfig, SourceConfig
 from calmerge.merger import compute_min_ttl, merge_calendars
 
 
-def make_source(id="src"):
-    return SourceConfig(id=id, url=f"https://example.com/{id}.ics")
+def make_source(id="src", participant=None):
+    return SourceConfig(id=id, url=f"https://example.com/{id}.ics", participant=participant)
 
 
-def make_calendar_config(freebusy=False, sources=None, participant=None):
+def make_calendar_config(freebusy=False, sources=None):
     if sources is None:
         sources = [make_source()]
-    return CalendarConfig(name="test", freebusy=freebusy, sources=sources, participant=participant)
+    return CalendarConfig(name="test", freebusy=freebusy, sources=sources)
 
 
 def make_ics(
@@ -301,49 +301,50 @@ def make_ics_with_attendees(partstat: str, email: str = "john@example.com") -> b
 
 
 def test_participant_accepted_sets_confirmed():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics_with_attendees("ACCEPTED")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("ACCEPTED"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CONFIRMED"
 
 
 def test_participant_tentative_sets_tentative():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics_with_attendees("TENTATIVE")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("TENTATIVE"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "TENTATIVE"
 
 
 def test_participant_declined_sets_cancelled():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics_with_attendees("DECLINED")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("DECLINED"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CANCELLED"
 
 
 def test_participant_needs_action_sets_tentative():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics_with_attendees("NEEDS-ACTION")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("NEEDS-ACTION"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "TENTATIVE"
 
 
 def test_participant_not_found_keeps_original_status():
-    config = make_calendar_config(participant="other@example.com")
+    src = make_source("s1", participant="other@example.com")
+    config = make_calendar_config(sources=[src])
     raw = make_ics_with_attendees("ACCEPTED", email="john@example.com")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    result = merge_calendars(config, [(src, raw)])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CONFIRMED"
 
 
 def test_participant_no_attendees_keeps_original_status():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics([{**SAMPLE_EVENT, "STATUS": "CONFIRMED"}])
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics([{**SAMPLE_EVENT, "STATUS": "CONFIRMED"}]))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CONFIRMED"
 
@@ -367,9 +368,9 @@ def make_ics_with_organizer(organizer_email: str) -> bytes:
 
 
 def test_participant_as_organizer_sets_confirmed():
-    config = make_calendar_config(participant="john@example.com")
-    raw = make_ics_with_organizer("john@example.com")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_organizer("john@example.com"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CONFIRMED"
 
@@ -390,33 +391,34 @@ def test_attendee_partstat_takes_precedence_over_organizer():
         "END:VCALENDAR",
     ]
     raw = "\r\n".join(lines).encode()
-    config = make_calendar_config(participant="john@example.com")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, raw)])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "TENTATIVE"
 
 
 def test_participant_status_applied_in_freebusy_mode():
-    config = make_calendar_config(freebusy=True, participant="john@example.com")
-    raw = make_ics_with_attendees("TENTATIVE")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(freebusy=True, sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("TENTATIVE"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "TENTATIVE"
     assert str(event["SUMMARY"]) == "Busy"
 
 
 def test_participant_status_applied_in_passthrough_mode():
-    config = make_calendar_config(freebusy=False, participant="john@example.com")
-    raw = make_ics_with_attendees("DECLINED")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1", participant="john@example.com")
+    config = make_calendar_config(freebusy=False, sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("DECLINED"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CANCELLED"
 
 
 def test_no_participant_configured_leaves_status_unchanged():
-    config = make_calendar_config(participant=None)
-    raw = make_ics_with_attendees("TENTATIVE")
-    result = merge_calendars(config, [(make_source("s1"), raw)])
+    src = make_source("s1")
+    config = make_calendar_config(sources=[src])
+    result = merge_calendars(config, [(src, make_ics_with_attendees("TENTATIVE"))])
     event = list(Calendar.from_ical(result).walk("VEVENT"))[0]
     assert str(event["STATUS"]) == "CONFIRMED"
 

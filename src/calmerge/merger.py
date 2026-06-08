@@ -71,8 +71,8 @@ def merge_calendars(
             else:
                 event = _copy_event(component, new_uid)
 
-            if calendar_config.participant:
-                derived = _participant_status(component, calendar_config.participant)
+            if source_config.participant:
+                derived = _participant_status(component, source_config.participant)
                 if derived is not None:
                     if "STATUS" in event:
                         del event["STATUS"]

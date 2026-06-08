@@ -183,12 +183,11 @@ def test_participant_loaded(tmp_path):
         """
 [[calendars]]
 name = "work"
-participant = "john@example.com"
-sources = [{ url = "https://example.com/work.ics", id = "work" }]
+sources = [{ url = "https://example.com/work.ics", id = "work", participant = "john@example.com" }]
 """,
     )
     config = load_config(p)
-    assert config.calendars[0].participant == "john@example.com"
+    assert config.calendars[0].sources[0].participant == "john@example.com"
 
 
 def test_participant_defaults_to_none(tmp_path):
@@ -201,7 +200,7 @@ sources = [{ url = "https://example.com/work.ics", id = "work" }]
 """,
     )
     config = load_config(p)
-    assert config.calendars[0].participant is None
+    assert config.calendars[0].sources[0].participant is None
 
 
 def test_multiple_sources(tmp_path):

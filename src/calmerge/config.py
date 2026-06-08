@@ -8,6 +8,7 @@ class SourceConfig:
     id: str
     url: str | None = None
     file: Path | None = None
+    participant: str | None = None
 
 
 @dataclass
@@ -15,7 +16,6 @@ class CalendarConfig:
     name: str
     freebusy: bool
     sources: list[SourceConfig]
-    participant: str | None = None
 
 
 @dataclass
@@ -63,14 +63,11 @@ def load_config(path: Path) -> AppConfig:
                     id=source_id,
                     url=url,
                     file=Path(file_path) if file_path else None,
+                    participant=src_raw.get("participant"),
                 )
             )
 
-        participant = cal_raw.get("participant")
-
-        calendars.append(
-            CalendarConfig(name=name, freebusy=freebusy, sources=sources, participant=participant)
-        )
+        calendars.append(CalendarConfig(name=name, freebusy=freebusy, sources=sources))
 
     config = AppConfig(calendars=calendars)
     config.calendars_by_name = {cal.name: cal for cal in calendars}

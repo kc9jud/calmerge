@@ -27,8 +27,7 @@ sources = [
 [[calendars]]
 name = "availability"
 freebusy = true            # strip personal data; SUMMARY replaced with "Busy"
-participant = "john@example.com"  # use this attendee's PARTSTAT as the event STATUS
 sources = [
-    { url = "https://calendar.example.com/work.ics", id = "work" },
-    { file = "/home/user/calendars/personal.ics", id = "personal" },
+    { url = "https://calendar.example.com/work.ics", id = "work", participant = "john@work.example.com" },
+    { file = "/home/user/calendars/personal.ics", id = "personal", participant = "john@personal.example.com" },
 ]
